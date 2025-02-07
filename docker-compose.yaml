@@ -7,8 +7,12 @@ services:
     container_name: see-containers
     environment:
       - PORT=9090
+      - RUNNING_IN_DOCKER=true
+      - HOST_IP=${HOST_IP} # Pass the host machine's LAN IP
     ports:
       - "3000:9090"
+    extra_hosts:
+      - "host.docker.internal:host-gateway" # Ensure host.docker.internal resolves to the host
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped

@@ -9,9 +9,9 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"sort"
 	"strconv"
-	"strings"
 	"text/template"
 	"time"
 )
@@ -64,6 +64,12 @@ func ListContainersHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		cleanedTime := time.Unix(unixTime, 0)
 		
+		// Get the host IP address
+		hostIP, err := getHostIP()
+		if err != nil {
+			panic(err)
+		}
+		
 		var publicPort int
 		for _, port := range c.Ports {
 			if port.PublicPort != 0 { // PublicPort exists
@@ -84,8 +90,8 @@ func ListContainersHandler(w http.ResponseWriter, r *http.Request) {
 			Status:     c.Status,
 			Ports:      c.Ports,
 			Labels:     c.Labels,
-			URL:        fmt.Sprintf("http://%s:%d", GetPreferredIP(), publicPort), // To be updated
-			NetworkIPs: networkIPs,                                                // Ensure the struct contains this field
+			URL:        fmt.Sprintf("http://%s:%d", hostIP, publicPort), // To be updated
+			NetworkIPs: networkIPs,                                      // Ensure the struct contains this field
 			Mounts:     c.Mounts,
 		}
 	}
@@ -132,46 +138,44 @@ func GetContainerLogsByIDHandler(w http.ResponseWriter, r *http.Request) {
 	// Retrieve logs for the container with the specified ID
 }
 
-// GetPreferredIP finds the best IP for external access
-func GetPreferredIP() string {
-	ifaces, err := net.Interfaces()
-	if err != nil {
-		return "127.0.0.1"
+// getHostIP retrieves the host IP address
+func getHostIP() (string, error) {
+	// Check if running inside a Docker container
+	if os.Getenv("RUNNING_IN_DOCKER") == "true" {
+		// Use host.docker.internal (supported on Docker for Windows and macOS)
+		hostIP := os.Getenv("HOST_IP")
+		if hostIP != "" {
+			return hostIP, nil
+		}
+		// Fallback to resolving host.docker.internal
+		addrs, err := net.LookupHost("host.docker.internal")
+		if err == nil && len(addrs) > 0 {
+			return addrs[0], nil
+		}
 	}
 	
-	for _, iface := range ifaces {
+	// If not running in Docker, get the LAN IP address of the host
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return "", err
+	}
+	
+	for _, iface := range interfaces {
+		// Skip loopback and Docker interfaces
+		if iface.Flags&net.FlagLoopback != 0 || iface.Flags&net.FlagUp == 0 {
+			continue
+		}
 		addrs, err := iface.Addrs()
 		if err != nil {
 			continue
 		}
-		
 		for _, addr := range addrs {
-			var ip net.IP
-			switch v := addr.(type) {
-			case *net.IPNet:
-				ip = v.IP
-			case *net.IPAddr:
-				ip = v.IP
-			}
-			
-			if ip == nil || ip.IsLoopback() {
-				continue
-			}
-			
-			ipStr := ip.String()
-			
-			// ✅ Ignore Docker's internal IPs (172.17.x.x, 172.18.x.x, etc.)
-			if strings.HasPrefix(ipStr, "172.17.") || strings.HasPrefix(ipStr, "172.18.") || strings.HasPrefix(ipStr, "172.19.") {
-				continue
-			}
-			
-			// ✅ Prefer private IPs (192.168.x.x or 172.31.x.x)
-			if strings.HasPrefix(ipStr, "192.168.") || strings.HasPrefix(ipStr, "172.31.") {
-				return ipStr
+			ipNet, ok := addr.(*net.IPNet)
+			if ok && !ipNet.IP.IsLoopback() && ipNet.IP.To4() != nil {
+				return ipNet.IP.String(), nil
 			}
 		}
 	}
 	
-	// ✅ Fallback to localhost
-	return "127.0.0.1"
+	return "", fmt.Errorf("no valid LAN IP address found")
 }
