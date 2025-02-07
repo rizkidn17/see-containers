@@ -6,7 +6,9 @@ services:
     image: rizkidn17/see-containers
     container_name: see-containers
     environment:
-      - PORT=8080
+      - PORT=9090
     ports:
-      - "3000:8080"
+      - "3000:9090"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
