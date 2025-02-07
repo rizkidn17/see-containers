@@ -13,7 +13,7 @@ RUN go mod download
 # Build the application
 RUN go mod tidy
 
-RUN go build -o binary ./cmd/see-containers
+RUN go build -o see-containers ./cmd/see-containers
 
 # Set the entry point of the container to the binary
 ENTRYPOINT ["/opt/see-containers"]
