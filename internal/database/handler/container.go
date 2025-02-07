@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"fmt"
 	"github.com/docker/docker/api/types"
 	containertypes "github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
@@ -61,6 +62,14 @@ func ListContainersHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		cleanedTime := time.Unix(unixTime, 0)
 		
+		var publicPort int
+		for _, port := range c.Ports {
+			if port.PublicPort != 0 { // PublicPort exists
+				publicPort = int(port.PublicPort)
+				break
+			}
+		}
+		
 		// Populate structured container data
 		containersData[i] = ContainerInfo{
 			ID:         c.ID,
@@ -73,8 +82,8 @@ func ListContainersHandler(w http.ResponseWriter, r *http.Request) {
 			Status:     c.Status,
 			Ports:      c.Ports,
 			Labels:     c.Labels,
-			URL:        "http://" + GetLocalIP() + ":8080", // To be updated
-			NetworkIPs: networkIPs,                         // Ensure the struct contains this field
+			URL:        fmt.Sprintf("http://%s:%d", GetLocalIP(), publicPort), // To be updated
+			NetworkIPs: networkIPs,                                            // Ensure the struct contains this field
 			Mounts:     c.Mounts,
 		}
 	}

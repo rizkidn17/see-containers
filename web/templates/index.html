@@ -34,8 +34,7 @@
                             <li>{{ .IP }}:{{ .PublicPort }} → {{ .PrivatePort }} ({{ .Type }})</li>
                             {{ end }}
                         </ul>
-                        <a target="_blank" rel="noopener noreferrer" href="{{ .URL }}" class="btn btn-primary">More
-                            Details</a>
+                        <a target="_blank" rel="noopener noreferrer" href="{{ .URL }}" class="btn btn-primary">{{ .URL }}</a>
 <!--                        <a target="_blank" rel="noopener noreferrer" href="{{ .URL }}" class="btn btn-primary">More-->
 <!--                            Details</a>-->
 <!--                        <a target="_blank" rel="noopener noreferrer" href="{{ .URL }}" class="btn btn-primary">More-->
@@ -44,7 +43,6 @@
                 </div>
             </div>
             {{ end }}
-
         </div>
     </section>
 </div>
