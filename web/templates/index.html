@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<head>
+    <title>See Containers</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"
+          crossorigin="anonymous"/>
+    <script src="https://unpkg.com/htmx.org@1.9.3"></script>
+</head>
+<body>
+<div class="container mt-4">
+    <section>
+        <div class="text-center mb-4">
+            <h1>Welcome to Our Card Section</h1>
+            <p class="text-muted">Explore our featured items below, each offering unique value and information.</p>
+        </div>
+        <div class="row row-cols-1 row-cols-md-3 g-4">
+            {{ range . }}
+            <div class="col">
+                <div class="card">
+                    <h5 class="card-header" style="text-transform:uppercase">{{index .Names 0}}</h5>
+                    <div class="card-body">
+                        <h5 class="card-title">State: {{ .State }}</h5>
+                        <strong>Image:</strong>
+                        <div>{{ .Image }}</div>
+
+                        <strong>Status:</strong>
+                        <div>{{ .Status }}</div>
+
+                        <strong>Created:</strong>
+                        <div>{{ .Created }}</div>
+
+                        <strong>Ports:</strong>
+                        <ul>
+                            {{ range .Ports }}
+                            <li>{{ .IP }}:{{ .PublicPort }} → {{ .PrivatePort }} ({{ .Type }})</li>
+                            {{ end }}
+                        </ul>
+                        <a target="_blank" rel="noopener noreferrer" href="{{ .URL }}" class="btn btn-primary">More
+                            Details</a>
+<!--                        <a target="_blank" rel="noopener noreferrer" href="{{ .URL }}" class="btn btn-primary">More-->
+<!--                            Details</a>-->
+<!--                        <a target="_blank" rel="noopener noreferrer" href="{{ .URL }}" class="btn btn-primary">More-->
+<!--                            Details</a>-->
+                    </div>
+                </div>
+            </div>
+            {{ end }}
+
+        </div>
+    </section>
+</div>
+</body>
+</html>
