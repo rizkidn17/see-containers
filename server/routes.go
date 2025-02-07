@@ -6,13 +6,14 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"log"
 	"net/http"
+	"see-containers/internal/database/handler"
 )
 
 func (s *Server) RegisterRoutes() http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	
-	r.Get("/", s.HelloWorldHandler)
+	r.Get("/", handler.ListContainersHandler)
 	
 	return r
 }
