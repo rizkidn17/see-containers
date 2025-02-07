@@ -9,7 +9,9 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"sort"
 	"strconv"
+	"strings"
 	"text/template"
 	"time"
 )
@@ -38,7 +40,7 @@ func ListContainersHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer cli.Close()
 	
-	containers, err := cli.ContainerList(ctx, containertypes.ListOptions{})
+	containers, err := cli.ContainerList(ctx, containertypes.ListOptions{All: true})
 	if err != nil {
 		panic(err)
 	}
@@ -82,11 +84,23 @@ func ListContainersHandler(w http.ResponseWriter, r *http.Request) {
 			Status:     c.Status,
 			Ports:      c.Ports,
 			Labels:     c.Labels,
-			URL:        fmt.Sprintf("http://%s:%d", GetLocalIP(), publicPort), // To be updated
-			NetworkIPs: networkIPs,                                            // Ensure the struct contains this field
+			URL:        fmt.Sprintf("http://%s:%d", GetPreferredIP(), publicPort), // To be updated
+			NetworkIPs: networkIPs,                                                // Ensure the struct contains this field
 			Mounts:     c.Mounts,
 		}
 	}
+	
+	sort.Slice(containersData, func(i, j int) bool {
+		// "running" containers should appear before others
+		if containersData[i].State == "running" && containersData[j].State != "running" {
+			return true
+		}
+		if containersData[i].State != "running" && containersData[j].State == "running" {
+			return false
+		}
+		// If both have the same state, maintain original order
+		return false
+	})
 	
 	tmplPath := "./web/templates/index.html"
 	
@@ -114,19 +128,50 @@ func StopContainerByIDHandler(w http.ResponseWriter, r *http.Request) {
 	// Stop the container with the specified ID
 }
 
-// GetLocalIP finds the first non-loopback local IP address
-func GetLocalIP() string {
-	addrs, err := net.InterfaceAddrs()
+func GetContainerLogsByIDHandler(w http.ResponseWriter, r *http.Request) {
+	// Retrieve logs for the container with the specified ID
+}
+
+// GetPreferredIP finds the best IP for external access
+func GetPreferredIP() string {
+	ifaces, err := net.Interfaces()
 	if err != nil {
-		return "127.0.0.1" // Fallback if unable to detect
+		return "127.0.0.1"
 	}
 	
-	for _, addr := range addrs {
-		if ipNet, ok := addr.(*net.IPNet); ok && !ipNet.IP.IsLoopback() {
-			if ipNet.IP.To4() != nil { // Ensure it's IPv4
-				return ipNet.IP.String()
+	for _, iface := range ifaces {
+		addrs, err := iface.Addrs()
+		if err != nil {
+			continue
+		}
+		
+		for _, addr := range addrs {
+			var ip net.IP
+			switch v := addr.(type) {
+			case *net.IPNet:
+				ip = v.IP
+			case *net.IPAddr:
+				ip = v.IP
+			}
+			
+			if ip == nil || ip.IsLoopback() {
+				continue
+			}
+			
+			ipStr := ip.String()
+			
+			// ✅ Ignore Docker's internal IPs (172.17.x.x, 172.18.x.x, etc.)
+			if strings.HasPrefix(ipStr, "172.17.") || strings.HasPrefix(ipStr, "172.18.") || strings.HasPrefix(ipStr, "172.19.") {
+				continue
+			}
+			
+			// ✅ Prefer private IPs (192.168.x.x or 172.31.x.x)
+			if strings.HasPrefix(ipStr, "192.168.") || strings.HasPrefix(ipStr, "172.31.") {
+				return ipStr
 			}
 		}
 	}
-	return "127.0.0.1" // Default if no local IP is found
+	
+	// ✅ Fallback to localhost
+	return "127.0.0.1"
 }
