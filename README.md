@@ -14,7 +14,11 @@ Basically trying to see the containers with Web UI.
 ## Installation
 ### A. With Docker as Container
 1. Modify docker_compose.yaml as your need (mostly port so it would conflict with other containers)
-2. Build the image and Run Docker compose
+2. Export the Host IP (Local machine) in terminal (reset each session). Example
+```
+export HOST_IP=172.31.0.2
+``` 
+3. Build the image and Run Docker compose
 ```
 docker compose build
 docker compose up -d
@@ -28,9 +32,8 @@ docker compose up -d --build
 ```
 git clone https://github.com/rizkidn17/see-containers.git
 ```
-2. Export the HOST IP and PORT in terminal (reset each session). Example :
+2. Export the PORT in terminal (reset each session). Example :
 ```
-export HOST_IP=172.31.0.2
 export PORT=8080
 ```
 3. Install dependencies
