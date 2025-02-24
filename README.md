@@ -28,8 +28,9 @@ docker compose up -d --build
 ```
 git clone https://github.com/rizkidn17/see-containers.git
 ```
-2. Export the PORT in terminal (reset each session). Example :
+2. Export the HOST IP and PORT in terminal (reset each session). Example :
 ```
+export HOST_IP=172.31.0.2
 export PORT=8080
 ```
 3. Install dependencies
